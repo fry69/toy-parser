@@ -1,5 +1,5 @@
 {
-  "name": "toy-language-typescript",
+  "name": "toy-parser",
   "module": "parser.ts",
   "type": "module",
   "devDependencies": {

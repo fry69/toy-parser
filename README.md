@@ -1,4 +1,6 @@
-# toy-language-typescript
+# Toy Parser
+
+"My first recursive descent parser"
 
 To install dependencies:
 
