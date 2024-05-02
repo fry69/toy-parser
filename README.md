@@ -2,16 +2,66 @@
 
 "My first recursive descent parser"
 
-To install dependencies:
+This lexer/parser/interpreter implements a dead simple toy language, which consists only of two different statements:
 
-```bash
-bun install
+1. Variable defintion
+
+```
+$var_name = "String"
+$other_var = 1234
 ```
 
-To run:
+2. Print statement
+
+```
+PRINT $var_name, $other_var, "String with \"escaped\" text", 23 - 5
+```
+
+Statements get separated either with a newline (`\n`) or a semicolon (`;`). Rudimentary arithmetic operations are implemented for test purposes (e.g. operator precedence).
+
+## Formal defintion
+
+EBNF-like description of the toy language:
+
+```ebnf
+program = { statement };
+
+statement = assignment_statement | print_statement;
+
+assignment_statement = variable "=" expression EOL;
+
+print_statement = "PRINT" expression_list EOL;
+
+expression_list = expression { "," expression };
+
+expression = binary_expression | atom;
+
+binary_expression = atom { ("+" | "-" | "*" | "/") expression };
+
+atom = variable | literal;
+
+variable = "$" (ALPHA | "_") { ALPHA | "_" };
+
+literal = STRING | INTEGER;
+
+STRING = '"' { character } '"';
+character = ALPHA | DIGIT | " " | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "-" | "_" | "=" | "+" | "[" | "]" | "{" | "}" | ";" | ":" | "'" | "<" | ">" | "," | "." | "?" | "/" | "|" | "\\" | '\"';
+
+INTEGER = DIGIT { DIGIT };
+
+ALPHA = "a" | "b" | ... | "z" | "A" | "B" | ... | "Z";
+DIGIT = "0" | "1" | ... | "9";
+
+EOL = ";" | "\n";
+```
+## Usage
 
 ```bash
 bun run parser.ts
 ```
 
-This project was created using `bun init` in bun v1.1.6. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+This will output the parsed abstract syntax tree of the included example program, followed by the result of the evaluated `PRINT` statements.
+
+## Disclaimer
+
+I have not read the [Dragon Book](https://suif.stanford.edu/dragonbook/), I barely know what I am doing.
