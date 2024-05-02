@@ -138,16 +138,16 @@ class Parser {
 
   private peekNext(): Token {
     if (this.currentIndex + 1 < tokens.length) {
-        return this.tokens[this.currentIndex + 1];
+      return this.tokens[this.currentIndex + 1];
     } else {
-        return { type: TokenType.EOL, value: "EOF" };
+      return { type: TokenType.EOL, value: "EOF" };
     }
   }
 
   private parseExpression(): Expression {
     if (this.peekNext().type !== TokenType.EOL) {
-     return this.parseBinaryExpression();
-    } 
+      return this.parseBinaryExpression();
+    }
     return this.parseAtom();
   }
 
@@ -251,9 +251,11 @@ class Parser {
 
       if (
         this.currentIndex < this.tokens.length &&
-        this.peek().type !== TokenType.EOL
+        this.peek().type === TokenType.COMMA
       ) {
         this.consume(); // Consume the separator (e.g., comma)
+      } else {
+        break; // Exit the loop if no more expressions
       }
     }
 
@@ -308,10 +310,10 @@ function interpret(statements: Statement[]): void {
         }
         break;
       case "PrintStatement":
-        const values = statement.expressions.map((expr) =>
-          evaluateExpression(expr, variables)
-        );
-        console.log(values.join(", "));
+        const values = statement.expressions
+          .map((expr) => evaluateExpression(expr, variables))
+          .filter((value) => value !== undefined);
+        console.log(values.join(" "));
         break;
       default:
         throw new Error(
@@ -327,17 +329,16 @@ const program = `
   PRINT $test_var
 
   ;;;
-  $a = "This"; $b = "and \\"that\\"";
-  PRINT $a; PRINT $b;
-
-  ;;;
-
-  PRINT 1 + 2;
-  $c = 3;
-  $d = 4;
-  $e = $c + $d;
-  PRINT $c + 1;
-  PRINT $c, $d, $e;
+  $a = "This"; $b = "and \\"that\\""
+  PRINT $a, $b
+  PRINT "1+2=", 1 + 2;
+  $c = 3
+  $d = 4
+  $e = $c + $d
+  PRINT $c - 1
+  PRINT $c - $d
+  PRINT $c, $d, $e
+  PRINT "Does this work?", "Yes!!!"
   `;
 
 const program2 = `$a = "Hi"; PRINT $a;`;
@@ -345,5 +346,5 @@ const program2 = `$a = "Hi"; PRINT $a;`;
 const tokens = lex(program);
 const parser = new Parser(tokens);
 const statements = parser.parse();
-console.dir(statements, {depth: 9});
+console.dir(statements, { depth: 9 });
 interpret(statements);
