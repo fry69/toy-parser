@@ -1,4 +1,9 @@
-// Lexer
+/**
+ *
+ * Lexer
+ *
+ */
+
 enum TokenType {
   VARIABLE,
   EQUAL,
@@ -25,69 +30,84 @@ function lex(input: string): Token[] {
   while (position < input.length) {
     const char = input[position];
 
-    if (char === "$") {
-      position++;
-      if (position >= input.length || !input[position].match(/[a-zA-Z_]/)) {
-        throw new Error(
-          `Expected variable name after '$' at index ${position}`
-        );
-      }
-      let variableName = input[position];
-      while (
-        position + 1 < input.length &&
-        input[position + 1].match(/[a-zA-Z_]/)
-      ) {
-        variableName += input[++position];
-      }
-      tokens.push({ type: TokenType.VARIABLE, value: variableName });
-    } else if (char === "=") {
-      tokens.push({ type: TokenType.EQUAL, value: "=" });
-    } else if (char === '"') {
-      let string = "";
-      position++;
-      while (position < input.length && input[position] !== '"') {
-        if (input[position] === "\\") {
-          position++;
-          string += input[position++];
+    switch (char) {
+      case " ":
+      case "\t":
+        // Ignore whitespace
+        break;
+      case "=":
+        tokens.push({ type: TokenType.EQUAL, value: char });
+        break;
+      case "+":
+        tokens.push({ type: TokenType.PLUS, value: char });
+        break;
+      case "-":
+        tokens.push({ type: TokenType.MINUS, value: char });
+        break;
+      case "*":
+        tokens.push({ type: TokenType.MULTIPLY, value: char });
+        break;
+      case "/":
+        tokens.push({ type: TokenType.DIVISION, value: char });
+        break;
+      case ",":
+        tokens.push({ type: TokenType.COMMA, value: char });
+        break;
+      case ";":
+      case "\n":
+        tokens.push({ type: TokenType.EOL, value: char });
+        break;
+      case "P":
+        if (input.slice(position, position + 5) === "PRINT") {
+          tokens.push({ type: TokenType.PRINT, value: "PRINT" });
+          position += 4;
         } else {
-          string += input[position++];
+          throw new Error(`Unexpected token '${char}' at index ${position}`);
         }
-      }
-      tokens.push({ type: TokenType.STRING, value: string });
-    } else if (char.match(/[0-9]/)) {
-      let integerString = char;
-      position++;
-      while (position < input.length && input[position].match(/[0-9]/)) {
-        integerString += input[position++];
-      }
-      position--;
-      tokens.push({
-        type: TokenType.INTEGER,
-        value: parseInt(integerString, 10),
-      });
-    } else if (char === "P") {
-      if (input.slice(position, position + 5) === "PRINT") {
-        tokens.push({ type: TokenType.PRINT, value: "PRINT" });
-        position += 4;
-      } else {
+        break;
+      case "$":
+        position++;
+        if (position >= input.length || !input[position].match(/[a-zA-Z_]/)) {
+          throw new Error(
+            `Expected variable name after '$' at index ${position}`
+          );
+        }
+        let variableName = input[position];
+        while (
+          position + 1 < input.length &&
+          input[position + 1].match(/[a-zA-Z_]/)
+        ) {
+          variableName += input[++position];
+        }
+        tokens.push({ type: TokenType.VARIABLE, value: variableName });
+        break;
+      case '"':
+        let string = "";
+        position++;
+        while (position < input.length && input[position] !== '"') {
+          if (input[position] === "\\") {
+            position++;
+            string += input[position++];
+          } else {
+            string += input[position++];
+          }
+        }
+        tokens.push({ type: TokenType.STRING, value: string });
+        break;
+      case char.match(/[0-9]/)?.input:
+        let integerString = char;
+        position++;
+        while (position < input.length && input[position].match(/[0-9]/)) {
+          integerString += input[position++];
+        }
+        position--;
+        tokens.push({
+          type: TokenType.INTEGER,
+          value: parseInt(integerString, 10),
+        });
+        break;
+      default:
         throw new Error(`Unexpected token '${char}' at index ${position}`);
-      }
-    } else if (char === "+") {
-      tokens.push({ type: TokenType.PLUS, value: "+" });
-    } else if (char === "-") {
-      tokens.push({ type: TokenType.MINUS, value: "-" });
-    } else if (char === "*") {
-      tokens.push({ type: TokenType.MULTIPLY, value: "*" });
-    } else if (char === "/") {
-      tokens.push({ type: TokenType.DIVISION, value: "/" });
-    } else if (char === ",") {
-      tokens.push({ type: TokenType.COMMA, value: "," });
-    } else if (char === ";" || char === "\n") {
-      tokens.push({ type: TokenType.EOL, value: char });
-    } else if (char === " " || char === "\t") {
-      // Ignore whitespace
-    } else {
-      throw new Error(`Unexpected token '${char}' at index ${position}`);
     }
 
     position++;
@@ -96,40 +116,51 @@ function lex(input: string): Token[] {
   return tokens;
 }
 
-// Parser
+/**
+ *
+ * Parser
+ *
+ */
+
+enum ParserType {
+  AssignmentStatement = "Assignemnt",
+  PrintStatement = "Print" ,
+  BinaryExpression = "Operation",
+  VariableReference = "Variable",
+  Literal = "Literal",
+}
+
+type Operation = "+" | "-" | "*" | "/";
+type Statement = AssignmentStatement | PrintStatement;
+type Expression = VariableReference | BinaryExpression | Literal;
+
 interface AssignmentStatement {
-  type: "AssignmentStatement";
+  type: ParserType.AssignmentStatement;
   varname: string;
   value: Expression;
 }
 
-type Operation = "+" | "-" | "*" | "/";
+interface PrintStatement {
+  type: ParserType.PrintStatement;
+  expressions: Expression[];
+}
 
 interface BinaryExpression {
-  type: "BinaryExpression";
+  type: ParserType.BinaryExpression;
   left: Expression;
   operator: Operation;
   right: Expression;
 }
 
-interface PrintStatement {
-  type: "PrintStatement";
-  expressions: Expression[];
-}
-
-type Expression = VariableReference | BinaryExpression | Literal;
-
-type VariableReference = {
-  type: "VariableReference";
+interface VariableReference {
+  type: ParserType.VariableReference;
   varname: string;
 };
 
-type Literal = {
-  type: "Literal";
+interface Literal {
+  type: ParserType.Literal;
   value: string | number;
 };
-
-type Statement = AssignmentStatement | PrintStatement;
 
 class Parser {
   private tokens: Token[];
@@ -179,7 +210,7 @@ class Parser {
       const right = this.parseExpression(operatorPrecedence);
 
       left = {
-        type: "BinaryExpression",
+        type: ParserType.BinaryExpression,
         left,
         operator,
         right,
@@ -194,7 +225,7 @@ class Parser {
 
     if (token.type === TokenType.VARIABLE) {
       return {
-        type: "VariableReference",
+        type: ParserType.VariableReference,
         varname: token.value as string,
       };
     } else if (
@@ -202,7 +233,7 @@ class Parser {
       token.type === TokenType.INTEGER
     ) {
       return {
-        type: "Literal",
+        type: ParserType.Literal,
         value: token.value,
       };
     } else {
@@ -221,38 +252,6 @@ class Parser {
       default:
         return 0;
     }
-  }
-
-  parse(): Statement[] {
-    const statements: Statement[] = [];
-
-    while (this.currentIndex < this.tokens.length) {
-      const token = this.peek();
-
-      if (token.type === TokenType.VARIABLE) {
-        const varname = this.consume().value as string;
-        this.consume(); // Consume the '='
-        const value = this.parseExpression();
-        statements.push({
-          type: "AssignmentStatement",
-          varname,
-          value,
-        });
-      } else if (token.type === TokenType.PRINT) {
-        this.consume(); // Consume the 'PRINT' token
-        const expressions = this.parseExpressionList();
-        statements.push({
-          type: "PrintStatement",
-          expressions,
-        });
-      } else if (token.type === TokenType.EOL) {
-        this.consume();
-      } else {
-        throw new Error(`Unexpected token: ${token.value}`);
-      }
-    }
-
-    return statements;
   }
 
   private parseExpressionList(): Expression[] {
@@ -276,9 +275,46 @@ class Parser {
 
     return expressions;
   }
+
+  parse(): Statement[] {
+    const statements: Statement[] = [];
+
+    while (this.currentIndex < this.tokens.length) {
+      const token = this.peek();
+
+      if (token.type === TokenType.VARIABLE) {
+        const varname = this.consume().value as string;
+        this.consume(); // Consume the '='
+        const value = this.parseExpression();
+        statements.push({
+          type: ParserType.AssignmentStatement,
+          varname,
+          value,
+        });
+      } else if (token.type === TokenType.PRINT) {
+        this.consume(); // Consume the 'PRINT' token
+        const expressions = this.parseExpressionList();
+        statements.push({
+          type: ParserType.PrintStatement,
+          expressions,
+        });
+      } else if (token.type === TokenType.EOL) {
+        this.consume();
+      } else {
+        throw new Error(`Unexpected token: ${token.value}`);
+      }
+    }
+
+    return statements;
+  }
 }
 
-// Interpreter
+/**
+ *
+ * Interpreter
+ *
+ */
+
 interface VariableStore {
   [key: string]: number | string;
 }
@@ -288,14 +324,14 @@ function evaluateExpression(
   variables: VariableStore
 ): number | string | undefined {
   switch (expr.type) {
-    case "VariableReference":
+    case ParserType.VariableReference:
       if (!(expr.varname in variables)) {
         throw new Error(`Variable '${expr.varname}' is not defined`);
       }
       return variables[expr.varname];
-    case "Literal":
+    case ParserType.Literal:
       return expr.value;
-    case "BinaryExpression":
+    case ParserType.BinaryExpression:
       const left = evaluateExpression(expr.left, variables);
       const right = evaluateExpression(expr.right, variables);
       if (typeof left !== "number" || typeof right !== "number") {
@@ -320,7 +356,7 @@ function interpret(statements: Statement[]): void {
 
   for (const statement of statements) {
     switch (statement.type) {
-      case "AssignmentStatement":
+      case ParserType.AssignmentStatement:
         const result = evaluateExpression(statement.value, variables);
         if (result) {
           variables[statement.varname] = result;
@@ -328,7 +364,7 @@ function interpret(statements: Statement[]): void {
           throw new Error("Error evalutating expression");
         }
         break;
-      case "PrintStatement":
+      case ParserType.PrintStatement:
         const values = statement.expressions
           .map((expr) => evaluateExpression(expr, variables))
           .filter((value) => value !== undefined);
@@ -364,8 +400,6 @@ const program = `
   PRINT 2 +3 *4 -1
   PRINT 2+3*4-1
   `;
-
-const program2 = `$a = "Hi"; PRINT $a;`;
 
 const tokens = lex(program);
 const parser = new Parser(tokens);
