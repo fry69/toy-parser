@@ -8,6 +8,8 @@ enum TokenType {
   PLUS,
   MINUS,
   COMMA,
+  MULTIPLY,
+  DIVISION,
   EOL,
 }
 
@@ -41,24 +43,28 @@ function lex(input: string): Token[] {
     } else if (char === "=") {
       tokens.push({ type: TokenType.EQUAL, value: "=" });
     } else if (char === '"') {
-      let value = "";
+      let string = "";
       position++;
       while (position < input.length && input[position] !== '"') {
         if (input[position] === "\\") {
           position++;
-          value += input[position++];
+          string += input[position++];
         } else {
-          value += input[position++];
+          string += input[position++];
         }
       }
-      tokens.push({ type: TokenType.STRING, value });
+      tokens.push({ type: TokenType.STRING, value: string });
     } else if (char.match(/[0-9]/)) {
-      let value = char;
+      let integerString = char;
       position++;
       while (position < input.length && input[position].match(/[0-9]/)) {
-        value += input[position++];
+        integerString += input[position++];
       }
-      tokens.push({ type: TokenType.INTEGER, value: parseInt(value, 10) });
+      position--;
+      tokens.push({
+        type: TokenType.INTEGER,
+        value: parseInt(integerString, 10),
+      });
     } else if (char === "P") {
       if (input.slice(position, position + 5) === "PRINT") {
         tokens.push({ type: TokenType.PRINT, value: "PRINT" });
@@ -70,6 +76,10 @@ function lex(input: string): Token[] {
       tokens.push({ type: TokenType.PLUS, value: "+" });
     } else if (char === "-") {
       tokens.push({ type: TokenType.MINUS, value: "-" });
+    } else if (char === "*") {
+      tokens.push({ type: TokenType.MULTIPLY, value: "*" });
+    } else if (char === "/") {
+      tokens.push({ type: TokenType.DIVISION, value: "/" });
     } else if (char === ",") {
       tokens.push({ type: TokenType.COMMA, value: "," });
     } else if (char === ";" || char === "\n") {
@@ -93,10 +103,12 @@ interface AssignmentStatement {
   value: Expression;
 }
 
+type Operation = "+" | "-" | "*" | "/";
+
 interface BinaryExpression {
   type: "BinaryExpression";
   left: Expression;
-  operator: "+" | "-";
+  operator: Operation;
   right: Expression;
 }
 
@@ -144,9 +156,9 @@ class Parser {
     }
   }
 
-  private parseExpression(): Expression {
+  private parseExpression(precedence: number = 0): Expression {
     if (this.peekNext().type !== TokenType.EOL) {
-      return this.parseBinaryExpression();
+      return this.parseBinaryExpression(precedence);
     }
     return this.parseAtom();
   }
@@ -162,9 +174,9 @@ class Parser {
         break;
       }
 
-      const operator = this.consume().value as "+" | "-";
+      const operator = this.consume().value as Operation;
 
-      const right = this.parseBinaryExpression(operatorPrecedence);
+      const right = this.parseExpression(operatorPrecedence);
 
       left = {
         type: "BinaryExpression",
@@ -203,6 +215,9 @@ class Parser {
       case TokenType.PLUS:
       case TokenType.MINUS:
         return 1;
+      case TokenType.MULTIPLY:
+      case TokenType.DIVISION:
+        return 2;
       default:
         return 0;
     }
@@ -291,6 +306,10 @@ function evaluateExpression(
           return left + right;
         case "-":
           return left - right;
+        case "*":
+          return left * right;
+        case "/":
+          return left / right;
         // Add support for other operators
       }
   }
@@ -339,6 +358,11 @@ const program = `
   PRINT $c - $d
   PRINT $c, $d, $e
   PRINT "Does this work?", "Yes!!!"
+  PRINT 3 * 9
+  PRINT 9 / 3
+  PRINT 2 + 3 * 4 - 1
+  PRINT 2 +3 *4 -1
+  PRINT 2+3*4-1
   `;
 
 const program2 = `$a = "Hi"; PRINT $a;`;
