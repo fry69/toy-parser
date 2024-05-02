@@ -7,6 +7,7 @@ enum TokenType {
   INTEGER,
   PLUS,
   MINUS,
+  COMMA,
   EOL,
 }
 
@@ -69,6 +70,8 @@ function lex(input: string): Token[] {
       tokens.push({ type: TokenType.PLUS, value: "+" });
     } else if (char === "-") {
       tokens.push({ type: TokenType.MINUS, value: "-" });
+    } else if (char === ",") {
+      tokens.push({ type: TokenType.COMMA, value: "," });
     } else if (char === ";" || char === "\n") {
       tokens.push({ type: TokenType.EOL, value: char });
     } else if (char === " " || char === "\t") {
@@ -116,56 +119,146 @@ type Literal = {
 
 type Statement = AssignmentStatement | PrintStatement;
 
-function parse(tokens: Token[]): Statement[] {
-  const statements: Statement[] = [];
-  let position = 0;
+class Parser {
+  private tokens: Token[];
+  private currentIndex: number;
 
-  while (position < tokens.length) {
-    const token = tokens[position];
+  constructor(tokens: Token[]) {
+    this.tokens = tokens;
+    this.currentIndex = 0;
+  }
 
-    if (token.type === TokenType.VARIABLE) {
-      let variableName = "";
-      if (typeof token.value === "string") {
-        variableName = token.value;
-      } else {
-        throw new Error(`Invalid variable name '${token.value}'`);
-      }
-      position++;
-      if (tokens[position].type !== TokenType.EQUAL) {
-        throw new Error(`Expected '=' after variable name '${variableName}'`);
-      }
-      position++;
-      if (tokens[position].type !== TokenType.STRING) {
-        throw new Error(
-          `Expected string value after '=' for variable '${variableName}'`
-        );
-      }
-      const variableValue = tokens[position].value;
-      statements.push({
-        type: "AssignmentStatement",
-        varname: variableName,
-        value: { type: "Literal", value: variableValue },
-      });
-      position++;
-    } else if (token.type === TokenType.PRINT) {
-      position++;
-      if (tokens[position].type !== TokenType.VARIABLE) {
-        throw new Error(`Expected '$' before variable name after 'PRINT'`);
-      }
-      const variableName = tokens[position].value as string;
-      statements.push({
-        type: "PrintStatement",
-        expressions: [{ type: "VariableReference", varname: variableName }],
-      });
-      position++;
-    } else if (token.type === TokenType.EOL) {
-      position++;
+  private consume(): Token {
+    return this.tokens[this.currentIndex++];
+  }
+
+  private peek(): Token {
+    return this.tokens[this.currentIndex];
+  }
+
+  private peekNext(): Token {
+    if (this.currentIndex + 1 < tokens.length) {
+        return this.tokens[this.currentIndex + 1];
     } else {
-      throw new Error(`Unexpected token '${token.value}' at index ${position}`);
+        return { type: TokenType.EOL, value: "EOF" };
     }
   }
 
-  return statements;
+  private parseExpression(): Expression {
+    if (this.peekNext().type !== TokenType.EOL) {
+     return this.parseBinaryExpression();
+    } 
+    return this.parseAtom();
+  }
+
+  private parseBinaryExpression(precedence: number = 0): Expression {
+    let left = this.parseAtom();
+
+    while (this.currentIndex < this.tokens.length) {
+      const token = this.peek();
+      const operatorPrecedence = this.getOperatorPrecedence(token.type);
+
+      if (operatorPrecedence <= precedence) {
+        break;
+      }
+
+      const operator = this.consume().value as "+" | "-";
+
+      const right = this.parseBinaryExpression(operatorPrecedence);
+
+      left = {
+        type: "BinaryExpression",
+        left,
+        operator,
+        right,
+      };
+    }
+
+    return left;
+  }
+
+  private parseAtom(): Expression {
+    const token = this.consume();
+
+    if (token.type === TokenType.VARIABLE) {
+      return {
+        type: "VariableReference",
+        varname: token.value as string,
+      };
+    } else if (
+      token.type === TokenType.STRING ||
+      token.type === TokenType.INTEGER
+    ) {
+      return {
+        type: "Literal",
+        value: token.value,
+      };
+    } else {
+      throw new Error(`Unexpected token: ${token.value}`);
+    }
+  }
+
+  private getOperatorPrecedence(tokenType: TokenType): number {
+    switch (tokenType) {
+      case TokenType.PLUS:
+      case TokenType.MINUS:
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  parse(): Statement[] {
+    const statements: Statement[] = [];
+
+    while (this.currentIndex < this.tokens.length) {
+      const token = this.peek();
+
+      if (token.type === TokenType.VARIABLE) {
+        const varname = this.consume().value as string;
+        this.consume(); // Consume the '='
+        const value = this.parseExpression();
+        statements.push({
+          type: "AssignmentStatement",
+          varname,
+          value,
+        });
+      } else if (token.type === TokenType.PRINT) {
+        this.consume(); // Consume the 'PRINT' token
+        const expressions = this.parseExpressionList();
+        statements.push({
+          type: "PrintStatement",
+          expressions,
+        });
+      } else if (token.type === TokenType.EOL) {
+        this.consume();
+      } else {
+        throw new Error(`Unexpected token: ${token.value}`);
+      }
+    }
+
+    return statements;
+  }
+
+  private parseExpressionList(): Expression[] {
+    const expressions: Expression[] = [];
+
+    while (
+      this.currentIndex < this.tokens.length &&
+      this.peek().type !== TokenType.EOL
+    ) {
+      expressions.push(this.parseExpression());
+
+      if (
+        this.currentIndex < this.tokens.length &&
+        this.peek().type !== TokenType.EOL
+      ) {
+        this.consume(); // Consume the separator (e.g., comma)
+      }
+    }
+
+    return expressions;
+  }
 }
 
 // Interpreter
@@ -238,9 +331,19 @@ const program = `
   PRINT $a; PRINT $b;
 
   ;;;
-  PRINT 1 + 2
+
+  PRINT 1 + 2;
+  $c = 3;
+  $d = 4;
+  $e = $c + $d;
+  PRINT $c + 1;
+  PRINT $c, $d, $e;
   `;
 
+const program2 = `$a = "Hi"; PRINT $a;`;
+
 const tokens = lex(program);
-const statements = parse(tokens);
+const parser = new Parser(tokens);
+const statements = parser.parse();
+console.dir(statements, {depth: 9});
 interpret(statements);
