@@ -148,11 +148,9 @@ class Lexer extends ErrorMessage {
             this.input[this.position] !== '"'
           ) {
             if (this.input[this.position] === "\\") {
-              this.position++;
-              string += this.input[this.position++];
-            } else {
-              string += this.input[this.position++];
+              this.position++; // skip backslash and copy the next symbol verbatim
             }
+            string += this.input[this.position++];
           }
           this.tokens.push({ type: TokenType.STRING, value: string });
           break;
