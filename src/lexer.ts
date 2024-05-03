@@ -1,4 +1,4 @@
-import { type Token, TokenType } from "./types";
+import { type Token, TokenType } from "./types.d";
 import { ErrorMessage } from "./utils";
 
 /**
@@ -112,7 +112,7 @@ export class Lexer extends ErrorMessage {
           ) {
             integerString += this.input[this.position++];
           }
-          this.position--; // thank goodness we remembered to move back again and not consume the next character
+          this.position--; // thank goodness we remembered to move back again and not skip the next symbol
           this.tokens.push({
             type: TokenType.INTEGER,
             value: parseInt(integerString, 10),

@@ -1,5 +1,5 @@
-import type { Token, Statement, Expression, Atom, Operation } from "./types";
-import { TokenType, NodeType } from "./types";
+import type { Token, Statement, Expression, Atom, Operation } from "./types.d";
+import { TokenType, NodeType } from "./types.d";
 import { ErrorMessage } from "./utils";
 
 /**

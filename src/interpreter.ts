@@ -1,5 +1,5 @@
-import type { Statement, Expression, VariableStore } from './types';
-import { NodeType } from "./types";
+import type { Statement, Expression, VariableStore } from './types.d';
+import { NodeType } from "./types.d";
 import { ErrorMessage } from './utils';
 
 /**
