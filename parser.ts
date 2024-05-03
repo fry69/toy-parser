@@ -142,7 +142,7 @@ function lex(input: string): Token[] {
 /**
  * Represents the different types of parser nodes.
  */
-enum ParserType {
+enum NodeType {
   AssignmentStatement = "Assignemnt",
   PrintStatement = "Print" ,
   BinaryExpression = "Operation",
@@ -175,7 +175,7 @@ type Atom = VariableReference | Literal;
  * Represents an assignment statement.
  */
 interface AssignmentStatement {
-  type: ParserType.AssignmentStatement;
+  type: NodeType.AssignmentStatement;
   varname: string;
   value: Expression;
 }
@@ -184,7 +184,7 @@ interface AssignmentStatement {
  * Represents a print statement.
  */
 interface PrintStatement {
-  type: ParserType.PrintStatement;
+  type: NodeType.PrintStatement;
   expressions: Expression[];
 }
 
@@ -192,7 +192,7 @@ interface PrintStatement {
  * Represents a binary expression.
  */
 interface BinaryExpression {
-  type: ParserType.BinaryExpression;
+  type: NodeType.BinaryExpression;
   left: Expression;
   operator: Operation;
   right: Expression;
@@ -202,7 +202,7 @@ interface BinaryExpression {
  * Represents a variable reference.
  */
 interface VariableReference {
-  type: ParserType.VariableReference;
+  type: NodeType.VariableReference;
   varname: string;
 };
 
@@ -210,7 +210,7 @@ interface VariableReference {
  * Represents a literal value.
  */
 interface Literal {
-  type: ParserType.Literal;
+  type: NodeType.Literal;
   value: string | number;
 };
 
@@ -291,7 +291,7 @@ class Parser {
       const right = this.parseExpression(operatorPrecedence);
 
       left = {
-        type: ParserType.BinaryExpression,
+        type: NodeType.BinaryExpression,
         left,
         operator,
         right,
@@ -310,7 +310,7 @@ class Parser {
 
     if (token.type === TokenType.VARIABLE) {
       return {
-        type: ParserType.VariableReference,
+        type: NodeType.VariableReference,
         varname: token.value as string,
       };
     } else if (
@@ -318,7 +318,7 @@ class Parser {
       token.type === TokenType.INTEGER
     ) {
       return {
-        type: ParserType.Literal,
+        type: NodeType.Literal,
         value: token.value,
       };
     } else {
@@ -385,7 +385,7 @@ class Parser {
         this.consume(); // Consume the '='
         const expression = this.parseExpression();
         statements.push({
-          type: ParserType.AssignmentStatement,
+          type: NodeType.AssignmentStatement,
           varname,
           value: expression,
         });
@@ -393,7 +393,7 @@ class Parser {
         this.consume(); // Consume the 'PRINT' token
         const expressions = this.parseExpressionList();
         statements.push({
-          type: ParserType.PrintStatement,
+          type: NodeType.PrintStatement,
           expressions,
         });
       } else if (token.type === TokenType.EOL) {
@@ -430,14 +430,14 @@ function evaluateExpression(
   variables: VariableStore
 ): number | string | undefined {
   switch (expr.type) {
-    case ParserType.VariableReference:
+    case NodeType.VariableReference:
       if (!(variables.has(expr.varname))) {
         throw new Error(`Variable '${expr.varname}' is not defined`);
       }
       return variables.get(expr.varname);
-    case ParserType.Literal:
+    case NodeType.Literal:
       return expr.value;
-    case ParserType.BinaryExpression:
+    case NodeType.BinaryExpression:
       const left = evaluateExpression(expr.left, variables);
       const right = evaluateExpression(expr.right, variables);
       if (typeof left !== "number" || typeof right !== "number") {
@@ -458,15 +458,15 @@ function evaluateExpression(
 }
 
 /**
- * Interprets the given statements and updates the variable store accordingly.
- * @param statements - The statements to be interpreted.
+ * Interprets the given statement nodes and updates the variable store accordingly.
+ * @param statements - The statement nodes to be interpreted.
  */
 function interpret(statements: Statement[]): void {
   const variables: VariableStore = new Map();
 
   for (const statement of statements) {
     switch (statement.type) {
-      case ParserType.AssignmentStatement:
+      case NodeType.AssignmentStatement:
         const result = evaluateExpression(statement.value, variables);
         if (result) {
           variables.set(statement.varname, result);
@@ -474,7 +474,7 @@ function interpret(statements: Statement[]): void {
           throw new Error("Error evalutating expression");
         }
         break;
-      case ParserType.PrintStatement:
+      case NodeType.PrintStatement:
         const values = statement.expressions
           .map((expr) => evaluateExpression(expr, variables))
           .filter((value) => value !== undefined);
@@ -482,7 +482,7 @@ function interpret(statements: Statement[]): void {
         break;
       default:
         throw new Error(
-          `Unsupported statement type: ${(statement as any).type}`
+          `Unsupported statement: ${(statement as any).type}`
         );
     }
   }
