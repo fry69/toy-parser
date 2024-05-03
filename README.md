@@ -57,7 +57,7 @@ EOL = ";" | "\n";
 ## Usage
 
 ```bash
-bun run parser.ts
+bun run src/main.ts
 ```
 
 This will output the parsed abstract syntax tree of the included example program, followed by the result of the evaluated `PRINT` statements.

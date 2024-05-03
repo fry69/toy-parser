@@ -481,7 +481,7 @@ type VariableStore = Map<string, string | number>;
 
 /**
  *
- * Parser class
+ * Interpreter class
  *
  * Interprets the given statement nodes and updates the variable store accordingly.
  */
