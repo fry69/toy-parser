@@ -11,7 +11,7 @@ export class ErrorMessage {
    */
   protected error(message: string): void {
     const errorMessage = `${this.constructor.name}: ${message}`;
-    console.error(errorMessage);
-    // throw new Error(errorMessage);
+    // console.error(errorMessage);
+    throw new Error(errorMessage);
   }
 }

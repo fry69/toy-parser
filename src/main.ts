@@ -23,7 +23,6 @@ const program = `
   PRINT 2 + 3 * 4 - 1
   PRINT 2 +3 *4 -1
   PRINT 2+3*4-1
-  asf
   `;
 
 const lexer = new Lexer(program);
