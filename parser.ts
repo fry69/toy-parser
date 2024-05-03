@@ -1,5 +1,29 @@
 /***************************************************************************
  *
+ * Utility section
+ *
+ ***************************************************************************/
+
+/**
+ *
+ * ErrorMessage class
+ *
+ * Centralize error message generation and prepend their origin to the message
+ */
+class ErrorMessage {
+  /**
+   * Throws an error with the origin class name prepended
+   * @param message {string} - Error message
+   */
+  protected error(message: string): void {
+    const errorMessage = `${this.constructor.name}: ${message}`;
+    console.error(errorMessage);
+    // throw new Error(errorMessage);
+  }
+}
+
+/***************************************************************************
+ *
  * Lexer section
  *
  ***************************************************************************/
@@ -35,12 +59,17 @@ interface Token {
  *
  * Lexes the input string and returns an array of tokens.
  */
-class Lexer {
+class Lexer extends ErrorMessage {
   private input: string;
   private position: number;
   private tokens: Token[];
 
+  /**
+   * Constructs a new Lexer instance with the string as input
+   * @param input - The input string to be lexed.
+   */
   constructor(input: string) {
+    super();
     this.input = input;
     this.position = 0;
     this.tokens = [];
@@ -48,7 +77,6 @@ class Lexer {
 
   /**
    * Lexes the input string and returns an array of tokens.
-   * @param input - The input string to be lexed.
    * @returns An array of tokens.
    */
   lex(): Token[] {
@@ -88,9 +116,7 @@ class Lexer {
             this.tokens.push({ type: TokenType.PRINT, value: "PRINT" });
             this.position += 4;
           } else {
-            throw new Error(
-              `Unexpected token '${char}' at index ${this.position}`
-            );
+            this.error(`unexpected symbol '${char}' at index ${this.position}`);
           }
           break;
         case "$":
@@ -100,8 +126,8 @@ class Lexer {
             this.position >= this.input.length ||
             !this.input[this.position].match(/[a-zA-Z_]/)
           ) {
-            throw new Error(
-              `Expected variable name after '$' at index ${this.position}`
+            this.error(
+              `expected variable name after '$' at index ${this.position}`
             );
           }
           let variableName = this.input[this.position];
@@ -147,9 +173,7 @@ class Lexer {
           });
           break;
         default:
-          throw new Error(
-            `Unexpected token '${char}' at index ${this.position}`
-          );
+          this.error(`unexpected symbol '${char}' at index ${this.position}`);
       }
 
       this.position++;
@@ -245,7 +269,7 @@ interface Literal {
  *
  * Parses the input tokens and constructs an abstract syntax tree (AST).
  */
-class Parser {
+class Parser extends ErrorMessage {
   private tokens: Token[];
   private currentIndex: number;
 
@@ -254,6 +278,7 @@ class Parser {
    * @param tokens - The tokens to be parsed.
    */
   constructor(tokens: Token[]) {
+    super();
     this.tokens = tokens;
     this.currentIndex = 0;
   }
@@ -291,7 +316,7 @@ class Parser {
    * @param precedence - The precedence of the expression.
    * @returns The parsed expression.
    */
-  private parseExpression(precedence: number = 0): Expression {
+  private parseExpression(precedence: number = 0): Expression | undefined {
     if (this.peekNext().type !== TokenType.EOL) {
       return this.parseBinaryExpression(precedence);
     }
@@ -303,10 +328,12 @@ class Parser {
    * @param precedence - The precedence of the binary expression.
    * @returns The parsed binary expression.
    */
-  private parseBinaryExpression(precedence: number = 0): Expression {
-    let left: Expression = this.parseAtom();
+  private parseBinaryExpression(
+    precedence: number = 0
+  ): Expression | undefined {
+    let left: Expression | undefined = this.parseAtom();
 
-    while (this.currentIndex < this.tokens.length) {
+    while (left && this.currentIndex < this.tokens.length) {
       const token = this.peek();
       const operatorPrecedence = this.getOperatorPrecedence(token.type);
 
@@ -318,12 +345,14 @@ class Parser {
 
       const right = this.parseExpression(operatorPrecedence);
 
-      left = {
-        type: NodeType.BinaryExpression,
-        left,
-        operator,
-        right,
-      };
+      if (operator && right) {
+        left = {
+          type: NodeType.BinaryExpression,
+          left,
+          operator,
+          right,
+        };
+      }
     }
 
     return left;
@@ -333,7 +362,7 @@ class Parser {
    * Parses an atomic expression.
    * @returns The parsed atomic expression.
    */
-  private parseAtom(): Atom {
+  private parseAtom(): Atom | undefined {
     const token = this.consume();
 
     if (token.type === TokenType.VARIABLE) {
@@ -350,7 +379,8 @@ class Parser {
         value: token.value,
       };
     } else {
-      throw new Error(`Unexpected token: ${token.value}`);
+      this.error(`unexpected token ${token.value}`);
+      return undefined;
     }
   }
 
@@ -383,7 +413,10 @@ class Parser {
       this.currentIndex < this.tokens.length &&
       this.peek().type !== TokenType.EOL
     ) {
-      expressions.push(this.parseExpression());
+      const expression = this.parseExpression();
+      if (expression) {
+        expressions.push(expression);
+      }
 
       if (
         this.currentIndex < this.tokens.length &&
@@ -412,11 +445,13 @@ class Parser {
         const varname = this.consume().value as string;
         this.consume(); // Consume the '='
         const expression = this.parseExpression();
-        statements.push({
-          type: NodeType.AssignmentStatement,
-          varname,
-          value: expression,
-        });
+        if (expression) {
+          statements.push({
+            type: NodeType.AssignmentStatement,
+            varname,
+            value: expression,
+          });
+        }
       } else if (token.type === TokenType.PRINT) {
         this.consume(); // Consume the 'PRINT' token
         const expressions = this.parseExpressionList();
@@ -427,7 +462,7 @@ class Parser {
       } else if (token.type === TokenType.EOL) {
         this.consume(); // Consume well-placed end of line / statement separator tokens
       } else {
-        throw new Error(`Unexpected token: ${token.value}`);
+        this.error(`unexpected token ${token.value}`);
       }
     }
 
@@ -452,11 +487,12 @@ type VariableStore = Map<string, string | number>;
  *
  * Interprets the given statement nodes and updates the variable store accordingly.
  */
-class Interpreter {
+class Interpreter extends ErrorMessage {
   private variables: VariableStore;
   private statements: Statement[] = [];
 
   constructor(statements: Statement[]) {
+    super();
     this.variables = new Map();
     this.statements = statements;
   }
@@ -471,7 +507,7 @@ class Interpreter {
     switch (expr.type) {
       case NodeType.VariableReference:
         if (!this.variables.has(expr.varname)) {
-          throw new Error(`Variable '${expr.varname}' is not defined`);
+          this.error(`variable '${expr.varname}' is not defined`);
         }
         return this.variables.get(expr.varname);
       case NodeType.Literal:
@@ -480,7 +516,8 @@ class Interpreter {
         const left = this.evaluateExpression(expr.left);
         const right = this.evaluateExpression(expr.right);
         if (typeof left !== "number" || typeof right !== "number") {
-          throw new Error("Operands must be numbers");
+          this.error("operands must be numbers");
+          break;
         }
         switch (expr.operator) {
           case "+":
@@ -508,7 +545,7 @@ class Interpreter {
           if (result) {
             this.variables.set(statement.varname, result);
           } else {
-            throw new Error("Error evaluating expression");
+            this.error("error evaluating expression");
           }
           break;
         case NodeType.PrintStatement:
@@ -518,7 +555,7 @@ class Interpreter {
           console.log(values.join(" "));
           break;
         default:
-          throw new Error(`Unsupported statement: ${(statement as any).type}`);
+          this.error(`unsupported statement: ${(statement as any).type}`);
       }
     }
   }
@@ -551,6 +588,7 @@ const program = `
   PRINT 2 + 3 * 4 - 1
   PRINT 2 +3 *4 -1
   PRINT 2+3*4-1
+  asf
   `;
 
 const lexer = new Lexer(program);
