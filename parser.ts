@@ -315,9 +315,13 @@ class Parser {
  *
  */
 
-interface VariableStore {
-  [key: string]: number | string;
-}
+// interface VariableStore {
+//   [key: string]: number | string;
+// }
+
+// type VariableStore = Record<string, string | number>;
+
+type VariableStore = Map<string, string | number>;
 
 function evaluateExpression(
   expr: Expression,
@@ -325,10 +329,10 @@ function evaluateExpression(
 ): number | string | undefined {
   switch (expr.type) {
     case ParserType.VariableReference:
-      if (!(expr.varname in variables)) {
+      if (!(variables.has(expr.varname))) {
         throw new Error(`Variable '${expr.varname}' is not defined`);
       }
-      return variables[expr.varname];
+      return variables.get(expr.varname);
     case ParserType.Literal:
       return expr.value;
     case ParserType.BinaryExpression:
@@ -352,14 +356,14 @@ function evaluateExpression(
 }
 
 function interpret(statements: Statement[]): void {
-  const variables: VariableStore = {};
+  const variables: VariableStore = new Map();
 
   for (const statement of statements) {
     switch (statement.type) {
       case ParserType.AssignmentStatement:
         const result = evaluateExpression(statement.value, variables);
         if (result) {
-          variables[statement.varname] = result;
+          variables.set(statement.varname, result);
         } else {
           throw new Error("Error evalutating expression");
         }
