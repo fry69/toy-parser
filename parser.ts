@@ -315,12 +315,6 @@ class Parser {
  *
  */
 
-// interface VariableStore {
-//   [key: string]: number | string;
-// }
-
-// type VariableStore = Record<string, string | number>;
-
 type VariableStore = Map<string, string | number>;
 
 function evaluateExpression(
@@ -403,7 +397,6 @@ const program = `
   PRINT 2 + 3 * 4 - 1
   PRINT 2 +3 *4 -1
   PRINT 2+3*4-1
-  PRINT $__proto__
   `;
 
 const tokens = lex(program);
