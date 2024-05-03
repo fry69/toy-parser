@@ -62,6 +62,14 @@ bun run src/main.ts
 
 This will output the parsed abstract syntax tree of the included example program, followed by the result of the evaluated `PRINT` statements.
 
+## Testing
+
+Test cases for the lexer, parser and interpreter modules can be run with:
+
+```bash
+bun test
+```
+
 ## Disclaimer
 
 I have not read the [Dragon Book](https://suif.stanford.edu/dragonbook/), I barely know what I am doing.
