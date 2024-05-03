@@ -1,9 +1,13 @@
-/**
+/***************************************************************************
  *
  * Lexer
  *
- */
+ ***************************************************************************/
 
+
+/**
+ * Represents the different types of tokens that can be recognized by the lexer.
+ */
 enum TokenType {
   VARIABLE,
   EQUAL,
@@ -18,11 +22,20 @@ enum TokenType {
   EOL,
 }
 
+/**
+ * Represents a single token, consisting of a type and a value.
+ */
 interface Token {
   type: TokenType;
   value: string | number;
 }
 
+
+/**
+ * Lexes the input string and returns an array of tokens.
+ * @param input - The input string to be lexed.
+ * @returns An array of tokens.
+ */
 function lex(input: string): Token[] {
   const tokens: Token[] = [];
   let position = 0;
@@ -58,6 +71,7 @@ function lex(input: string): Token[] {
         tokens.push({ type: TokenType.EOL, value: char });
         break;
       case "P":
+        // PRINT statement
         if (input.slice(position, position + 5) === "PRINT") {
           tokens.push({ type: TokenType.PRINT, value: "PRINT" });
           position += 4;
@@ -66,6 +80,7 @@ function lex(input: string): Token[] {
         }
         break;
       case "$":
+        // Variable reference
         position++;
         if (position >= input.length || !input[position].match(/[a-zA-Z_]/)) {
           throw new Error(
@@ -82,6 +97,7 @@ function lex(input: string): Token[] {
         tokens.push({ type: TokenType.VARIABLE, value: variableName });
         break;
       case '"':
+        // String
         let string = "";
         position++;
         while (position < input.length && input[position] !== '"') {
@@ -95,12 +111,13 @@ function lex(input: string): Token[] {
         tokens.push({ type: TokenType.STRING, value: string });
         break;
       case char.match(/[0-9]/)?.input:
+        // Integer digits
         let integerString = char;
-        position++;
+        position++; // remember to move back again, as the position gets advanced at the end of the loop
         while (position < input.length && input[position].match(/[0-9]/)) {
           integerString += input[position++];
         }
-        position--;
+        position--; // thank goodness we remembered to move back again and not consume the next character
         tokens.push({
           type: TokenType.INTEGER,
           value: parseInt(integerString, 10),
@@ -116,12 +133,15 @@ function lex(input: string): Token[] {
   return tokens;
 }
 
-/**
+/***************************************************************************
  *
  * Parser
  *
- */
+ ***************************************************************************/
 
+/**
+ * Represents the different types of parser nodes.
+ */
 enum ParserType {
   AssignmentStatement = "Assignemnt",
   PrintStatement = "Print" ,
@@ -130,21 +150,47 @@ enum ParserType {
   Literal = "Literal",
 }
 
+/**
+ * Represents a binary operation.
+ */
 type Operation = "+" | "-" | "*" | "/";
+
+/**
+ * Represents a statement in the language.
+ */
 type Statement = AssignmentStatement | PrintStatement;
+
+/**
+ * Represents an expression in the language.
+ */
 type Expression = VariableReference | BinaryExpression | Literal;
 
+/**
+ * Represents an atomic expression in the language.
+ */
+type Atom = VariableReference | Literal;
+
+
+/**
+ * Represents an assignment statement.
+ */
 interface AssignmentStatement {
   type: ParserType.AssignmentStatement;
   varname: string;
   value: Expression;
 }
 
+/**
+ * Represents a print statement.
+ */
 interface PrintStatement {
   type: ParserType.PrintStatement;
   expressions: Expression[];
 }
 
+/**
+ * Represents a binary expression.
+ */
 interface BinaryExpression {
   type: ParserType.BinaryExpression;
   left: Expression;
@@ -152,33 +198,58 @@ interface BinaryExpression {
   right: Expression;
 }
 
+/**
+ * Represents a variable reference.
+ */
 interface VariableReference {
   type: ParserType.VariableReference;
   varname: string;
 };
 
+/**
+ * Represents a literal value.
+ */
 interface Literal {
   type: ParserType.Literal;
   value: string | number;
 };
 
+/**
+ * Parses the input tokens and constructs an abstract syntax tree (AST).
+ */
 class Parser {
   private tokens: Token[];
   private currentIndex: number;
 
+  /**
+   * Constructs a new Parser instance with the given tokens.
+   * @param tokens - The tokens to be parsed.
+   */
   constructor(tokens: Token[]) {
     this.tokens = tokens;
     this.currentIndex = 0;
   }
 
+  /**
+   * Consumes the next token from the input.
+   * @returns The consumed token.
+   */
   private consume(): Token {
     return this.tokens[this.currentIndex++];
   }
 
+  /**
+   * Peeks at the current token in the input.
+   * @returns The current token.
+   */
   private peek(): Token {
     return this.tokens[this.currentIndex];
   }
 
+  /**
+   * Peeks at the next token in the input.
+   * @returns The next token.
+   */
   private peekNext(): Token {
     if (this.currentIndex + 1 < tokens.length) {
       return this.tokens[this.currentIndex + 1];
@@ -187,6 +258,11 @@ class Parser {
     }
   }
 
+  /**
+   * Parses an expression with the given precedence.
+   * @param precedence - The precedence of the expression.
+   * @returns The parsed expression.
+   */
   private parseExpression(precedence: number = 0): Expression {
     if (this.peekNext().type !== TokenType.EOL) {
       return this.parseBinaryExpression(precedence);
@@ -194,8 +270,13 @@ class Parser {
     return this.parseAtom();
   }
 
+  /**
+   * Parses a binary expression with the given precedence.
+   * @param precedence - The precedence of the binary expression.
+   * @returns The parsed binary expression.
+   */
   private parseBinaryExpression(precedence: number = 0): Expression {
-    let left = this.parseAtom();
+    let left: Expression = this.parseAtom();
 
     while (this.currentIndex < this.tokens.length) {
       const token = this.peek();
@@ -220,7 +301,11 @@ class Parser {
     return left;
   }
 
-  private parseAtom(): Expression {
+  /**
+   * Parses an atomic expression.
+   * @returns The parsed atomic expression.
+   */
+  private parseAtom(): Atom {
     const token = this.consume();
 
     if (token.type === TokenType.VARIABLE) {
@@ -241,6 +326,11 @@ class Parser {
     }
   }
 
+  /**
+   * Gets the precedence of the given operator.
+   * @param tokenType - The token type representing the operator.
+   * @returns The precedence of the operator.
+   */
   private getOperatorPrecedence(tokenType: TokenType): number {
     switch (tokenType) {
       case TokenType.PLUS:
@@ -254,6 +344,10 @@ class Parser {
     }
   }
 
+  /**
+   * Parses a list of expressions.
+   * @returns An array of parsed expressions.
+   */
   private parseExpressionList(): Expression[] {
     const expressions: Expression[] = [];
 
@@ -276,6 +370,10 @@ class Parser {
     return expressions;
   }
 
+  /**
+   * Parses the input tokens and returns an array of statements.
+   * @returns An array of parsed statements.
+   */
   parse(): Statement[] {
     const statements: Statement[] = [];
 
@@ -285,11 +383,11 @@ class Parser {
       if (token.type === TokenType.VARIABLE) {
         const varname = this.consume().value as string;
         this.consume(); // Consume the '='
-        const value = this.parseExpression();
+        const expression = this.parseExpression();
         statements.push({
           type: ParserType.AssignmentStatement,
           varname,
-          value,
+          value: expression,
         });
       } else if (token.type === TokenType.PRINT) {
         this.consume(); // Consume the 'PRINT' token
@@ -299,7 +397,7 @@ class Parser {
           expressions,
         });
       } else if (token.type === TokenType.EOL) {
-        this.consume();
+        this.consume(); // Consume well-placed end of line / statement separator tokens
       } else {
         throw new Error(`Unexpected token: ${token.value}`);
       }
@@ -309,14 +407,24 @@ class Parser {
   }
 }
 
-/**
+/***************************************************************************
  *
  * Interpreter
  *
- */
+ ***************************************************************************/
 
+/**
+ * Represents a store for variables.
+ */
 type VariableStore = Map<string, string | number>;
 
+
+/**
+ * Evaluates the given expression using the provided variable store.
+ * @param expr - The expression to be evaluated.
+ * @param variables - The variable store to use during evaluation.
+ * @returns The result of the expression evaluation.
+ */
 function evaluateExpression(
   expr: Expression,
   variables: VariableStore
@@ -349,6 +457,10 @@ function evaluateExpression(
   }
 }
 
+/**
+ * Interprets the given statements and updates the variable store accordingly.
+ * @param statements - The statements to be interpreted.
+ */
 function interpret(statements: Statement[]): void {
   const variables: VariableStore = new Map();
 
