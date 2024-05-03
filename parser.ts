@@ -399,6 +399,7 @@ const program = `
   PRINT 2 + 3 * 4 - 1
   PRINT 2 +3 *4 -1
   PRINT 2+3*4-1
+  PRINT $__proto__
   `;
 
 const tokens = lex(program);
