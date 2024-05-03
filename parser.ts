@@ -1,9 +1,8 @@
 /***************************************************************************
  *
- * Lexer
+ * Lexer section
  *
  ***************************************************************************/
-
 
 /**
  * Represents the different types of tokens that can be recognized by the lexer.
@@ -30,112 +29,139 @@ interface Token {
   value: string | number;
 }
 
-
 /**
+ *
+ * Lexer class
+ *
  * Lexes the input string and returns an array of tokens.
- * @param input - The input string to be lexed.
- * @returns An array of tokens.
  */
-function lex(input: string): Token[] {
-  const tokens: Token[] = [];
-  let position = 0;
+class Lexer {
+  private input: string;
+  private position: number;
+  private tokens: Token[];
 
-  while (position < input.length) {
-    const char = input[position];
-
-    switch (char) {
-      case " ":
-      case "\t":
-        // Ignore whitespace
-        break;
-      case "=":
-        tokens.push({ type: TokenType.EQUAL, value: char });
-        break;
-      case "+":
-        tokens.push({ type: TokenType.PLUS, value: char });
-        break;
-      case "-":
-        tokens.push({ type: TokenType.MINUS, value: char });
-        break;
-      case "*":
-        tokens.push({ type: TokenType.MULTIPLY, value: char });
-        break;
-      case "/":
-        tokens.push({ type: TokenType.DIVISION, value: char });
-        break;
-      case ",":
-        tokens.push({ type: TokenType.COMMA, value: char });
-        break;
-      case ";":
-      case "\n":
-        tokens.push({ type: TokenType.EOL, value: char });
-        break;
-      case "P":
-        // PRINT statement
-        if (input.slice(position, position + 5) === "PRINT") {
-          tokens.push({ type: TokenType.PRINT, value: "PRINT" });
-          position += 4;
-        } else {
-          throw new Error(`Unexpected token '${char}' at index ${position}`);
-        }
-        break;
-      case "$":
-        // Variable reference
-        position++;
-        if (position >= input.length || !input[position].match(/[a-zA-Z_]/)) {
-          throw new Error(
-            `Expected variable name after '$' at index ${position}`
-          );
-        }
-        let variableName = input[position];
-        while (
-          position + 1 < input.length &&
-          input[position + 1].match(/[a-zA-Z_]/)
-        ) {
-          variableName += input[++position];
-        }
-        tokens.push({ type: TokenType.VARIABLE, value: variableName });
-        break;
-      case '"':
-        // String
-        let string = "";
-        position++;
-        while (position < input.length && input[position] !== '"') {
-          if (input[position] === "\\") {
-            position++;
-            string += input[position++];
-          } else {
-            string += input[position++];
-          }
-        }
-        tokens.push({ type: TokenType.STRING, value: string });
-        break;
-      case char.match(/[0-9]/)?.input:
-        // Integer digits
-        let integerString = char;
-        position++; // remember to move back again, as the position gets advanced at the end of the loop
-        while (position < input.length && input[position].match(/[0-9]/)) {
-          integerString += input[position++];
-        }
-        position--; // thank goodness we remembered to move back again and not consume the next character
-        tokens.push({
-          type: TokenType.INTEGER,
-          value: parseInt(integerString, 10),
-        });
-        break;
-      default:
-        throw new Error(`Unexpected token '${char}' at index ${position}`);
-    }
-
-    position++;
+  constructor(input: string) {
+    this.input = input;
+    this.position = 0;
+    this.tokens = [];
   }
 
-  return tokens;
+  /**
+   * Lexes the input string and returns an array of tokens.
+   * @param input - The input string to be lexed.
+   * @returns An array of tokens.
+   */
+  lex(): Token[] {
+    while (this.position < this.input.length) {
+      const char = this.input[this.position];
+
+      switch (char) {
+        case " ":
+        case "\t":
+          // Ignore whitespace
+          break;
+        case "=":
+          this.tokens.push({ type: TokenType.EQUAL, value: char });
+          break;
+        case "+":
+          this.tokens.push({ type: TokenType.PLUS, value: char });
+          break;
+        case "-":
+          this.tokens.push({ type: TokenType.MINUS, value: char });
+          break;
+        case "*":
+          this.tokens.push({ type: TokenType.MULTIPLY, value: char });
+          break;
+        case "/":
+          this.tokens.push({ type: TokenType.DIVISION, value: char });
+          break;
+        case ",":
+          this.tokens.push({ type: TokenType.COMMA, value: char });
+          break;
+        case ";":
+        case "\n":
+          this.tokens.push({ type: TokenType.EOL, value: char });
+          break;
+        case "P":
+          // PRINT statement
+          if (this.input.slice(this.position, this.position + 5) === "PRINT") {
+            this.tokens.push({ type: TokenType.PRINT, value: "PRINT" });
+            this.position += 4;
+          } else {
+            throw new Error(
+              `Unexpected token '${char}' at index ${this.position}`
+            );
+          }
+          break;
+        case "$":
+          // Variable reference
+          this.position++;
+          if (
+            this.position >= this.input.length ||
+            !this.input[this.position].match(/[a-zA-Z_]/)
+          ) {
+            throw new Error(
+              `Expected variable name after '$' at index ${this.position}`
+            );
+          }
+          let variableName = this.input[this.position];
+          while (
+            this.position + 1 < this.input.length &&
+            this.input[this.position + 1].match(/[a-zA-Z_]/)
+          ) {
+            variableName += this.input[++this.position];
+          }
+          this.tokens.push({ type: TokenType.VARIABLE, value: variableName });
+          break;
+        case '"':
+          // String
+          let string = "";
+          this.position++;
+          while (
+            this.position < this.input.length &&
+            this.input[this.position] !== '"'
+          ) {
+            if (this.input[this.position] === "\\") {
+              this.position++;
+              string += this.input[this.position++];
+            } else {
+              string += this.input[this.position++];
+            }
+          }
+          this.tokens.push({ type: TokenType.STRING, value: string });
+          break;
+        case char.match(/[0-9]/)?.input:
+          // Integer digits
+          let integerString = char;
+          this.position++; // remember to move back again, as the position gets advanced at the end of the loop
+          while (
+            this.position < this.input.length &&
+            this.input[this.position].match(/[0-9]/)
+          ) {
+            integerString += this.input[this.position++];
+          }
+          this.position--; // thank goodness we remembered to move back again and not consume the next character
+          this.tokens.push({
+            type: TokenType.INTEGER,
+            value: parseInt(integerString, 10),
+          });
+          break;
+        default:
+          throw new Error(
+            `Unexpected token '${char}' at index ${this.position}`
+          );
+      }
+
+      this.position++;
+    }
+
+    return this.tokens;
+  }
 }
 
 /***************************************************************************
  *
- * Parser
+ * Parser section
  *
  ***************************************************************************/
 
@@ -144,7 +170,7 @@ function lex(input: string): Token[] {
  */
 enum NodeType {
   AssignmentStatement = "Assignemnt",
-  PrintStatement = "Print" ,
+  PrintStatement = "Print",
   BinaryExpression = "Operation",
   VariableReference = "Variable",
   Literal = "Literal",
@@ -169,7 +195,6 @@ type Expression = VariableReference | BinaryExpression | Literal;
  * Represents an atomic expression in the language.
  */
 type Atom = VariableReference | Literal;
-
 
 /**
  * Represents an assignment statement.
@@ -204,7 +229,7 @@ interface BinaryExpression {
 interface VariableReference {
   type: NodeType.VariableReference;
   varname: string;
-};
+}
 
 /**
  * Represents a literal value.
@@ -212,9 +237,12 @@ interface VariableReference {
 interface Literal {
   type: NodeType.Literal;
   value: string | number;
-};
+}
 
 /**
+ *
+ * Parser class
+ *
  * Parses the input tokens and constructs an abstract syntax tree (AST).
  */
 class Parser {
@@ -409,7 +437,7 @@ class Parser {
 
 /***************************************************************************
  *
- * Interpreter
+ * Interpreter section
  *
  ***************************************************************************/
 
@@ -418,75 +446,89 @@ class Parser {
  */
 type VariableStore = Map<string, string | number>;
 
-
 /**
- * Evaluates the given expression using the provided variable store.
- * @param expr - The expression to be evaluated.
- * @param variables - The variable store to use during evaluation.
- * @returns The result of the expression evaluation.
- */
-function evaluateExpression(
-  expr: Expression,
-  variables: VariableStore
-): number | string | undefined {
-  switch (expr.type) {
-    case NodeType.VariableReference:
-      if (!(variables.has(expr.varname))) {
-        throw new Error(`Variable '${expr.varname}' is not defined`);
-      }
-      return variables.get(expr.varname);
-    case NodeType.Literal:
-      return expr.value;
-    case NodeType.BinaryExpression:
-      const left = evaluateExpression(expr.left, variables);
-      const right = evaluateExpression(expr.right, variables);
-      if (typeof left !== "number" || typeof right !== "number") {
-        throw new Error("Operands must be numbers");
-      }
-      switch (expr.operator) {
-        case "+":
-          return left + right;
-        case "-":
-          return left - right;
-        case "*":
-          return left * right;
-        case "/":
-          return left / right;
-        // Add support for other operators
-      }
-  }
-}
-
-/**
+ *
+ * Parser class
+ *
  * Interprets the given statement nodes and updates the variable store accordingly.
- * @param statements - The statement nodes to be interpreted.
  */
-function interpret(statements: Statement[]): void {
-  const variables: VariableStore = new Map();
+class Interpreter {
+  private variables: VariableStore;
+  private statements: Statement[] = [];
 
-  for (const statement of statements) {
-    switch (statement.type) {
-      case NodeType.AssignmentStatement:
-        const result = evaluateExpression(statement.value, variables);
-        if (result) {
-          variables.set(statement.varname, result);
-        } else {
-          throw new Error("Error evalutating expression");
+  constructor(statements: Statement[]) {
+    this.variables = new Map();
+    this.statements = statements;
+  }
+
+  /**
+   * Evaluates the given expression using the provided variable store.
+   * @param expr - The expression to be evaluated.
+   * @param variables - The variable store to use during evaluation.
+   * @returns The result of the expression evaluation.
+   */
+  evaluateExpression(expr: Expression): number | string | undefined {
+    switch (expr.type) {
+      case NodeType.VariableReference:
+        if (!this.variables.has(expr.varname)) {
+          throw new Error(`Variable '${expr.varname}' is not defined`);
         }
-        break;
-      case NodeType.PrintStatement:
-        const values = statement.expressions
-          .map((expr) => evaluateExpression(expr, variables))
-          .filter((value) => value !== undefined);
-        console.log(values.join(" "));
-        break;
-      default:
-        throw new Error(
-          `Unsupported statement: ${(statement as any).type}`
-        );
+        return this.variables.get(expr.varname);
+      case NodeType.Literal:
+        return expr.value;
+      case NodeType.BinaryExpression:
+        const left = this.evaluateExpression(expr.left);
+        const right = this.evaluateExpression(expr.right);
+        if (typeof left !== "number" || typeof right !== "number") {
+          throw new Error("Operands must be numbers");
+        }
+        switch (expr.operator) {
+          case "+":
+            return left + right;
+          case "-":
+            return left - right;
+          case "*":
+            return left * right;
+          case "/":
+            return left / right;
+          // Add support for other operators
+        }
+    }
+  }
+
+  /**
+   * Interprets the given statement nodes and updates the variable store accordingly.
+   * @param statements - The statement nodes to be interpreted.
+   */
+  interpret(): void {
+    for (const statement of this.statements) {
+      switch (statement.type) {
+        case NodeType.AssignmentStatement:
+          const result = this.evaluateExpression(statement.value);
+          if (result) {
+            this.variables.set(statement.varname, result);
+          } else {
+            throw new Error("Error evaluating expression");
+          }
+          break;
+        case NodeType.PrintStatement:
+          const values = statement.expressions
+            .map((expr) => this.evaluateExpression(expr))
+            .filter((value) => value !== undefined);
+          console.log(values.join(" "));
+          break;
+        default:
+          throw new Error(`Unsupported statement: ${(statement as any).type}`);
+      }
     }
   }
 }
+
+/***************************************************************************
+ *
+ * Main section (entry point)
+ *
+ ***************************************************************************/
 
 // Example usage
 const program = `
@@ -511,8 +553,12 @@ const program = `
   PRINT 2+3*4-1
   `;
 
-const tokens = lex(program);
+const lexer = new Lexer(program);
+const tokens = lexer.lex();
+
 const parser = new Parser(tokens);
 const statements = parser.parse();
 console.dir(statements, { depth: 9 });
-interpret(statements);
+
+const interpreter = new Interpreter(statements);
+interpreter.interpret();
