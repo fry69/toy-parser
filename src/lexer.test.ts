@@ -80,10 +80,10 @@ describe("Lexer", () => {
     ]);
   });
 
-  it.todo("should handle whitespace and comments", () => {
+  it("should handle whitespace and comments", () => {
     const input = `
       $a = 1
-      ; This is a comment
+      % This is a comment
       $b = 2
       PRINT $a, $b
     `;
@@ -91,16 +91,20 @@ describe("Lexer", () => {
     const tokens = lexer.lex();
 
     expect(tokens).toEqual([
+      { type: TokenType.EOL, value: "\n" },
       { type: TokenType.VARIABLE, value: "a" },
       { type: TokenType.EQUAL, value: "=" },
       { type: TokenType.INTEGER, value: 1 },
+      { type: TokenType.EOL, value: "\n" },
       { type: TokenType.VARIABLE, value: "b" },
       { type: TokenType.EQUAL, value: "=" },
       { type: TokenType.INTEGER, value: 2 },
+      { type: TokenType.EOL, value: "\n" },
       { type: TokenType.PRINT, value: "PRINT" },
       { type: TokenType.VARIABLE, value: "a" },
       { type: TokenType.COMMA, value: "," },
       { type: TokenType.VARIABLE, value: "b" },
+      { type: TokenType.EOL, value: "\n" },
     ]);
   });
 });

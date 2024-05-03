@@ -26,11 +26,13 @@ EBNF-like description of the toy language:
 ```ebnf
 program = { statement };
 
-statement = assignment_statement | print_statement;
+statement = assignment_statement | print_statement | comment;
 
-assignment_statement = variable "=" expression EOL;
+assignment_statement = variable "=" expression SEPARATOR;
 
-print_statement = "PRINT" expression_list EOL;
+print_statement = "PRINT" expression_list SEPARATOR;
+
+comment = "%" { character } EOL;
 
 expression_list = expression { "," expression };
 
@@ -52,7 +54,9 @@ INTEGER = DIGIT { DIGIT };
 ALPHA = "a" | "b" | ... | "z" | "A" | "B" | ... | "Z";
 DIGIT = "0" | "1" | ... | "9";
 
-EOL = ";" | "\n";
+EOL = "\n";
+
+SEPARATOR = ";" | EOL;
 ```
 ## Usage
 

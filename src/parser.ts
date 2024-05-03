@@ -198,6 +198,12 @@ export class Parser extends ErrorMessage {
           type: NodeType.PrintStatement,
           expressions,
         });
+      } else if (token.type === TokenType.UNSUPPORTED) {
+        statements.push({
+          type: NodeType.Unsupported,
+          value: token.value,
+        });
+        this.consume(); // Consume the unsupported token
       } else if (token.type === TokenType.EOL) {
         this.consume(); // Consume well-placed end of line / statement separator tokens
       } else {

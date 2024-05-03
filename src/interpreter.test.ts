@@ -4,7 +4,7 @@ import { Parser } from "./parser";
 import { Interpreter } from "./interpreter";
 
 describe("Interpreter", () => {
-  it.todo("should correctly evaluate a simple assignment statement", () => {
+  it("should correctly evaluate a simple assignment statement", () => {
     const input = '$test_var = "Hello World!"';
     const lexer = new Lexer(input);
     const tokens = lexer.lex();
@@ -14,7 +14,7 @@ describe("Interpreter", () => {
 
     interpreter.interpret();
 
-    // expect(interpreter.variables.get('test_var')).toBe('Hello World!');
+    expect(interpreter.getVariable('test_var')).toBe('Hello World!');
   });
 
   it("should correctly evaluate a print statement with multiple expressions", () => {
@@ -179,9 +179,9 @@ describe("Interpreter", () => {
     // expect(console.log).toHaveBeenCalledWith('helloworld');
   });
 
-  it.todo("should correctly handle unsupported statements", () => {
+  it("should correctly handle unsupported statements", () => {
     const input = `
-      UNSUPPORTED_STATEMENT
+      @directive
     `;
     const lexer = new Lexer(input);
     const tokens = lexer.lex();
@@ -190,7 +190,7 @@ describe("Interpreter", () => {
     const interpreter = new Interpreter(statements);
 
     expect(() => interpreter.interpret()).toThrowError(
-      "Interpreter: unsupported statement: UNSUPPORTED_STATEMENT"
+      "Interpreter: unsupported statement: @directive"
     );
   });
 });

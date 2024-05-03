@@ -14,7 +14,7 @@ export class Lexer extends ErrorMessage {
 
   /**
    * Constructs a new Lexer instance with the string as input
-   * @param input - The input string to be lexed.
+   * @param {string} input - The input string to be lexed.
    */
   constructor(input: string) {
     super();
@@ -24,8 +24,66 @@ export class Lexer extends ErrorMessage {
   }
 
   /**
+   * Reads next symbols and returns an identifier consisting of alphabetic symbols + _
+   * @returns {string} - The identifier
+   */
+  private readIdentifier(): string {
+    if (
+      this.position >= this.input.length ||
+      !this.input[this.position].match(/[a-zA-Z_]/)
+    ) {
+      this.error(`expected identifier at index ${this.position}`);
+    }
+    let identifier = this.input[this.position];
+    while (
+      this.position + 1 < this.input.length &&
+      this.input[this.position + 1].match(/[a-zA-Z_]/)
+    ) {
+      identifier += this.input[++this.position];
+    }
+    return identifier;
+  }
+
+  /**
+   * Reads next digit symbols and returns an integer number
+   * @returns {number} - The parsed integer number
+   */
+  private readInteger(): number {
+    // Integer digits
+    let integerString = this.input[this.position];
+    this.position++; // remember to move back again, as the position gets advanced at the end of the loop
+    while (
+      this.position < this.input.length &&
+      this.input[this.position].match(/[0-9]/)
+    ) {
+      integerString += this.input[this.position++];
+    }
+    this.position--; // thank goodness we remembered to move back again and not skip the next symbol
+    return parseInt(integerString, 10);
+  }
+
+  /**
+   * Reads a string encapsulated in double quotes
+   * @returns {string} - The string excluding the double quotes
+   */
+  private readString(): string {
+    let string = "";
+    this.position++;
+    while (
+      this.position < this.input.length &&
+      this.input[this.position] !== '"'
+    ) {
+      if (this.input[this.position] === "\\") {
+        this.position++; // skip backslash and copy the next symbol verbatim
+      }
+      string += this.input[this.position++];
+    }
+    return string;
+  }
+
+  /**
    * Lexes the input string and returns an array of tokens.
-   * @returns An array of tokens.
+   * @returns {Token[]} - An array of tokens.
    */
   lex(): Token[] {
     while (this.position < this.input.length) {
@@ -35,6 +93,22 @@ export class Lexer extends ErrorMessage {
         case " ":
         case "\t":
           // Ignore whitespace
+          break;
+        case "%":
+          // Comments (skip everything until next line)
+          while (
+            this.position < this.input.length &&
+            this.input[this.position] !== "\n"
+          ) {
+            this.position++;
+          }
+          break;
+        case "@":
+          this.position++; // move past '@'
+          this.tokens.push({
+            type: TokenType.UNSUPPORTED,
+            value: char + this.readIdentifier(),
+          });
           break;
         case "=":
           this.tokens.push({ type: TokenType.EQUAL, value: char });
@@ -69,56 +143,28 @@ export class Lexer extends ErrorMessage {
           break;
         case "$":
           // Variable reference
-          this.position++;
-          if (
-            this.position >= this.input.length ||
-            !this.input[this.position].match(/[a-zA-Z_]/)
-          ) {
-            this.error(
-              `expected variable name after '$' at index ${this.position}`
-            );
-          }
-          let variableName = this.input[this.position];
-          while (
-            this.position + 1 < this.input.length &&
-            this.input[this.position + 1].match(/[a-zA-Z_]/)
-          ) {
-            variableName += this.input[++this.position];
-          }
-          this.tokens.push({ type: TokenType.VARIABLE, value: variableName });
+          this.position++; // move past '$'
+          this.tokens.push({
+            type: TokenType.VARIABLE,
+            value: this.readIdentifier(),
+          });
           break;
         case '"':
           // String
-          let string = "";
-          this.position++;
-          while (
-            this.position < this.input.length &&
-            this.input[this.position] !== '"'
-          ) {
-            if (this.input[this.position] === "\\") {
-              this.position++; // skip backslash and copy the next symbol verbatim
-            }
-            string += this.input[this.position++];
-          }
-          this.tokens.push({ type: TokenType.STRING, value: string });
+          this.tokens.push({
+            type: TokenType.STRING,
+            value: this.readString(),
+          });
           break;
         case char.match(/[0-9]/)?.input:
           // Integer digits
-          let integerString = char;
-          this.position++; // remember to move back again, as the position gets advanced at the end of the loop
-          while (
-            this.position < this.input.length &&
-            this.input[this.position].match(/[0-9]/)
-          ) {
-            integerString += this.input[this.position++];
-          }
-          this.position--; // thank goodness we remembered to move back again and not skip the next symbol
           this.tokens.push({
             type: TokenType.INTEGER,
-            value: parseInt(integerString, 10),
+            value: this.readInteger(),
           });
           break;
         default:
+          // this.tokens.push({ type: TokenType.UNSUPPORTED, value: char });
           this.error(`unexpected symbol '${char}' at index ${this.position}`);
       }
 

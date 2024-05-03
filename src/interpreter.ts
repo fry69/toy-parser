@@ -12,10 +12,23 @@ export class Interpreter extends ErrorMessage {
   private variables: VariableStore;
   private statements: Statement[] = [];
 
+  /**
+   * Constructs a new Interpreter instance with statements as input
+   * @param statements - Parsed statements to evaluate
+   */
   constructor(statements: Statement[]) {
     super();
     this.variables = new Map();
     this.statements = statements;
+  }
+
+  /**
+   * Read a variable from store
+   * @param varname {string} - Variable name to lookup
+   * @returns The content of the variable
+   */
+  getVariable(varname: string): string | number | undefined {
+    return this.variables.get(varname);
   }
 
   /**
@@ -76,7 +89,7 @@ export class Interpreter extends ErrorMessage {
           console.log(values.join(" "));
           break;
         default:
-          this.error(`unsupported statement: ${(statement as any).type}`);
+          this.error(`unsupported statement: ${(statement as any).value}`);
       }
     }
   }
