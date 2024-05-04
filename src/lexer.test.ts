@@ -4,12 +4,13 @@ import { Lexer as LexerTable } from "./lexer-table";
 import { lexerRules } from "./lexer-table-rules";
 import { TokenType } from "./types.d";
 
-// Wrap the table based lexer with rules and adjust the error message to hide the wrapper
+// Wrap the table based lexer with rules for the toy language
 class LexerTableWrapper extends LexerTable {
   constructor(input: string) {
     super(input, lexerRules);
   }
 
+  // Adjust the error message to hide the wrapper, so messages match in test cases
   error(message: string): void {
     const errorMessage = `Lexer: ${message}`;
     throw new Error(errorMessage);
