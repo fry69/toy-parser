@@ -8,7 +8,7 @@ export const lexerRules: LexerTable = [
     pattern: /^%.*/,
     tokenType: TokenType.COMMENT,
     skipToken: true,
-    // move past EOL, otherwise superfluous EOL token get added 
+    // move past EOL, otherwise superfluous EOL token gets added
     skipNextSymbol: true,
   },
   { pattern: /^@\w+/, tokenType: TokenType.UNSUPPORTED },
