@@ -38,7 +38,9 @@ expression_list = expression { "," expression };
 
 expression = binary_expression | atom;
 
-binary_expression = atom { ("+" | "-" | "*" | "/") expression };
+binary_expression = atom operator expression;
+
+operator = "+" | "-" | "*" | "/";
 
 atom = variable | literal;
 
@@ -47,7 +49,11 @@ variable = "$" (ALPHA | "_") { ALPHA | "_" };
 literal = STRING | INTEGER;
 
 STRING = '"' { character } '"';
-character = ALPHA | DIGIT | " " | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "-" | "_" | "=" | "+" | "[" | "]" | "{" | "}" | ";" | ":" | "'" | "<" | ">" | "," | "." | "?" | "/" | "|" | "\\" | '\"';
+
+character = ALPHA | DIGIT | " " | "!" | "@" | "#" | "$" | "%" |
+            "^" | "&" | "*" | "(" | ")" | "-" | "_" | "=" | "+" |
+            "[" | "]" | "{" | "}" | ";" | ":" | "'" | "<" | ">" |
+            "," | "." | "?" | "/" | "|" | "\\" | '\"';
 
 INTEGER = DIGIT { DIGIT };
 
