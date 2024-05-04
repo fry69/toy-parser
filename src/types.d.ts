@@ -2,6 +2,8 @@
  * Represents the different types of tokens that can be recognized by the lexer.
  */
 export enum TokenType {
+  WHITESPACE,
+  COMMENT,
   VARIABLE,
   EQUAL,
   STRING,

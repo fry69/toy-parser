@@ -1,14 +1,17 @@
-import { Lexer } from './lexer';
-import { Parser } from './parser';
-import { Interpreter } from './interpreter';
+import { Lexer } from "./lexer";
+import { Lexer as LexerTable } from "./lexer-table";
+import { Parser } from "./parser";
+import { Interpreter } from "./interpreter";
+import { lexerRules } from "./lexer-table-rules";
 
 // Example usage
 const program = `
   $test_var = "Hello World!"
   PRINT $test_var
 
+  % comment
   ;;;
-  $a = "This"; $b = "and \\"that\\""
+  $a = "This"; $b = "and \\"that\\" backslash (\\\\)"
   PRINT $a, $b
   PRINT "1+2=", 1 + 2;
   $c = 3
@@ -25,8 +28,17 @@ const program = `
   PRINT 2+3*4-1
   `;
 
-const lexer = new Lexer(program);
+const program_simple = `
+$a = "Hi"
+$a = "This"; $b = "and \\"that\\""
+`;
+
+// const lexer = new Lexer(program);
+// const tokens = lexer.lex();
+
+const lexer = new LexerTable(program, lexerRules);
 const tokens = lexer.lex();
+console.dir(tokens);
 
 const parser = new Parser(tokens);
 const statements = parser.parse();
